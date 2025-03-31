@@ -11,26 +11,6 @@ def setup_logging():
     config = Config.get_instance()
     logging.config.dictConfig(config.logging_config)
 
-def analyze_case_example():
-    config = Config.get_instance()
-    # 初始化组件
-    cache = MessageCache(config.api_config['ttl'])
-    monitor = PerformanceMonitor()
-    balancer = LoadBalancer(config.api_config['providers'])
-    client = APIClient(cache, monitor, balancer, config)
-    requestor = RequestCoordinator(client, config.api_config['max_workers'])  
-
-    case_descriptions = [
-        ""
-    ]
-    
-    results = requestor.batch_process_cases(case_descriptions)
-
-    # 输出结果统计
-    success = sum(1 for r in results if not r.get('error'))
-    print(f"成功处理 {success}/{len(case_descriptions)} 个案件")
-    print(f"性能指标: {monitor.get_metrics()}")
-
 def construct_msg_description(file_path, start_row=2, end_row=None):
     """
     基于`Excel表格`构建`获取案件描述`的请求消息
