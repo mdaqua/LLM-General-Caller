@@ -1,5 +1,5 @@
 from itertools import cycle
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 import random
 
 class LoadBalancer:

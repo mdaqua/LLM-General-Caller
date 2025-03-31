@@ -1,11 +1,14 @@
 api_config:
   providers:
-    openai:
-      base_url: https://api.openai.com/v1
-      keys: [key1, key2]
-    anthropic:
-      base_url: https://api.anthropic.com/v1
-      keys: [key3]
+    # openai:
+    #   base_url: https://api.openai.com/v1
+    #   keys: [key1, key2]
+    # anthropic:
+    #   base_url: https://api.anthropic.com/v1
+    #   keys: [key3]
+    dify:
+      base_url: https://api.dify.ai/v1
+      keys: [app-eDLJdYzEekWwvQ4NiG0SuO6o]
   ttl: 300  # 5 minutes
   load_balancing: true
   max_workers: 5
@@ -25,7 +28,20 @@ api_specs:
     required_params:
       max_tokens: 1000
       temperature: 0.7
+  dify:
+    endpoint: /chat-messages
+    content_field: answer
+    required_params:
+      inputs: {}
+      response_mode: blocking
+      conversation_id: ""
+      user: "test"
 
 logging:
   level: INFO
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+case:
+  storage_path: ./cases
+  validation_strict: true
+  max_retries: 3

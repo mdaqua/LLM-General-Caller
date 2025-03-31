@@ -1,8 +1,9 @@
 import time
 import requests
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 from .adapters import get_adapter
+from .case.models import CaseData
 
 logger = logging.getLogger(__name__)
 
@@ -67,3 +68,28 @@ class APIClient:
             logger.error(f"API request failed: {str(e)}")
             self.monitor.record_request(False, time.time()-start_time)
             raise
+    
+    def process_case_description(self, description: str, **kwargs) -> CaseData:
+        response = self.send_request(description, **kwargs)
+        
+        try:
+            # 原始响应处理
+            raw_data = response['content']
+            
+            # 预处理特殊值
+            def preprocess(data):
+                if isinstance(data, dict):
+                    return {k: preprocess(v) for k, v in data.items()}
+                if isinstance(data, list):
+                    return [preprocess(item) for item in data]
+                if data in ["无", "不详", "未知", "暂无"]:
+                    return "暂无"
+                return data
+
+            processed_data = preprocess(raw_data)
+            
+            # 解析为数据模型
+            return CaseData(**processed_data)
+        except Exception as e:
+            error_msg = f"数据解析失败: {str(e)}\n原始数据：{raw_data}"
+            raise ValueError(error_msg)

@@ -1,6 +1,7 @@
 import concurrent.futures
-from typing import List, Dict
+from typing import List
 import threading
+import logger
 
 class RequestCoordinator:
     def __init__(self, client, max_workers=5):
@@ -39,5 +40,36 @@ class RequestCoordinator:
                     logger.error(f"Request failed: {str(e)}")
                 
                 print(f"Progress: {self.completed}/{total} completed")
+        
+        return self.results
+    
+    def process_case(self, description: str, provider=None):
+        try:
+            result = self.client.process_case_description(description, provider)
+            with self.lock:
+                self.completed += 1
+                self.results.append(result)
+            return result
+        except Exception as e:
+            return {"error": str(e), "description": description}
+
+    def batch_process_cases(self, descriptions: List[str], provider=None):
+        self.completed = 0
+        self.results = []
+        total = len(descriptions)
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = {
+                executor.submit(self.process_case, desc, provider): desc 
+                for desc in descriptions
+            }
+            
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    logger.error(f"案件处理失败: {str(e)}")
+                
+                print(f"进度: {self.completed}/{total} 已完成")
         
         return self.results
