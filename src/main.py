@@ -1,12 +1,11 @@
+import logging
+import pandas as pd
 from .config import Config
 from .cache import MessageCache
 from .monitor import PerformanceMonitor
 from .balancer import LoadBalancer
 from .client import APIClient
 from .requestor import RequestCoordinator
-import json
-import logging
-import pandas as pd
 
 def setup_logging():
     config = Config.get_instance()
