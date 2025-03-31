@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 from typing import Union, Dict
-from .models import CaseData
+from case.models import CaseData
 import threading
 
 class CaseStorage:

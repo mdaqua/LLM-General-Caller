@@ -8,7 +8,7 @@ class TimeInfo(BaseModel):
     processing_time: str
     completion_time: str
 
-    @field_validator('*', pre=True)
+    @field_validator('*', mode='before')
     def validate_time_format(cls, v):
         try:
             datetime.strptime(v, "%Y-%m-%d %H:%M")
@@ -25,11 +25,11 @@ class LocationInfo(BaseModel):
 
 class SubjectInfo(BaseModel):
     name: str
-    sexuality: str = Field(..., regex='^(男|女|暂无)$')
+    sexuality: str = Field(..., pattern='^(男|女|暂无)$')
     phone: Union[str, None] = Field(default="暂无", max_length=20)
     id_card: Union[str, None] = Field(default="暂无", max_length=20)
 
-    @field_validator('phone', pre=True)
+    @field_validator('phone', mode='before')
     def validate_phone(cls, v):
         if v in ["暂无", None]:
             return "暂无"
@@ -37,7 +37,7 @@ class SubjectInfo(BaseModel):
             raise ValueError('手机号格式无效')
         return v
     
-    @field_validator('id_card', pre=True)
+    @field_validator('id_card', mode='before')
     def validate_id_card(cls, v):
         if v in ["暂无", None]:
             return "暂无"
@@ -65,7 +65,7 @@ class PersonInfo(BaseModel):
     fatalities: int
 
 class AddressInfo(BaseModel):
-    type: str = Field(..., regex='^(案发地|户籍地|公司注册地)$')
+    type: str = Field(..., pattern='^(案发地|户籍地|公司注册地)$')
     full_address: str
 
 class SpecialFlags(BaseModel):
@@ -119,7 +119,7 @@ class CaseData(BaseModel):
             }
         }
 
-    @model_validator(pre=True)
+    @model_validator(mode='before')
     def set_defaults(cls, values):
         # 确保嵌套字段都有默认值
         if 'relationships' not in values:
