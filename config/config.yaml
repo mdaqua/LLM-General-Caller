@@ -8,7 +8,7 @@ api_config:
       keys: [key3]
     dify:
       base_url: https://api.dify.ai/v1
-      keys: [app-eDLJdYzEekWwvQ4NiG0SuO6o]
+      keys: [app-]
   ttl: 300  # 5 minutes
   load_balancing: true
   max_workers: 5
