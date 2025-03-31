@@ -3,3 +3,5 @@ pyyaml
 logger
 pydantic
 jsonpath_rw
+pandas
+openpyxl

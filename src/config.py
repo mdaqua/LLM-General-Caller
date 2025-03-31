@@ -1,12 +1,13 @@
-import os
 import yaml
+from pathlib import Path
 
 class Config:
     _instance = None
     
     def __init__(self):
-        with open(os.path.join(os.path.dirname(__file__), '../config/config.yaml')) as f:
-            self.config = yaml.safe_load(f)
+        config_path = Path(__file__).parent.parent / 'config' / 'config.yaml'
+        with open(config_path, 'r') as file:
+            self.config = yaml.safe_load(file)
     
     @classmethod
     def get_instance(cls):

@@ -21,20 +21,39 @@ class APIClient:
             self.adapters[provider] = get_adapter(provider, spec)
         return self.adapters[provider]
     
-    def send_request(self, message, provider: Optional[str] = None, **kwargs):
-        cached_response = self.cache.get(message)
-        if cached_response:
-            return cached_response
+    def _detect_provider(self, api_key: str) -> str:
+        for provider, config in self.balancer.providers.items():
+            if any(key.startswith(api_key[:3]) for key in config['keys']):
+                return provider
+        raise ValueError("Cannot determine provider from API key")
+    
+    def send_request(self,
+                     message: str,
+                     provider: Optional[str] = None,
+                     api_key: Optional[str] = None,
+                     key_index: Optional[int] = None,
+                     **kwargs):
+        if cached := self.cache.get(message):
+            return cached
         
-        if not provider:
-            provider = self.balancer.get_random_provider()
-        provider, api_key = self.balancer.get_next_key(provider)
+        if api_key:
+            provider = self._detect_provider(api_key)
+            selected_key = api_key
+        elif provider:
+            if key_index is not None:
+                provider, selected_key = self.balancer.get_specific_key(provider, key_index)
+            else:
+                provider, selected_key = self.balancer.get_next_key(provider)
+        else:
+            provider = self.config.api_config['default_provider']
+            provider, selected_key = self.balancer.get_next_key(provider)
         
         adapter = self._get_adapter(provider)
-        endpoint = self.config.api_specs[provider]['endpoint']
+        endpoint = self.config.api_specs[provider].get('endpoint', '')
         
+        url = f"{self.balancer.providers[provider]['base_url']}{endpoint}"
         headers = {
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {selected_key}",
             "Content-Type": "application/json"
         }
         
@@ -44,7 +63,7 @@ class APIClient:
             start_time = time.time()
             
             response = requests.post(
-                self.balancer.providers[provider]['base_url'] + endpoint,
+                url,
                 headers=headers,
                 json=payload,
                 timeout=10
@@ -53,43 +72,23 @@ class APIClient:
             response_data = response.json()
             
             # 标准化响应
-            parsed_content = adapter.parse_response(response_data)
-            standard_response = {
+            content = adapter.parse_response(response_data)
+            result = {
                 "provider": provider,
-                "content": parsed_content,
-                "raw": response_data
+                "content": content,
+                "raw": response_data,
+                "success": True,
             }
             
-            self.monitor.record_request(True, time.time()-start_time)
-            self.cache.set(message, standard_response)
-            return standard_response
+            self.monitor.record_request(provider, True, time.time()-start_time)
+            self.cache.set(message, result)
+            return result
             
         except Exception as e:
             logger.error(f"API request failed: {str(e)}")
-            self.monitor.record_request(False, time.time()-start_time)
-            raise
-    
-    def process_case_description(self, description: str, **kwargs) -> CaseData:
-        response = self.send_request(description, **kwargs)
-        
-        try:
-            # 原始响应处理
-            raw_data = response['content']
-            
-            # 预处理特殊值
-            def preprocess(data):
-                if isinstance(data, dict):
-                    return {k: preprocess(v) for k, v in data.items()}
-                if isinstance(data, list):
-                    return [preprocess(item) for item in data]
-                if data in ["无", "不详", "未知", "暂无"]:
-                    return "暂无"
-                return data
-
-            processed_data = preprocess(raw_data)
-            
-            # 解析为数据模型
-            return CaseData(**processed_data)
-        except Exception as e:
-            error_msg = f"数据解析失败: {str(e)}\n原始数据：{raw_data}"
-            raise ValueError(error_msg)
+            self.monitor.record_request(provider, False, time.time()-start_time)
+            return {
+                "provider": provider,
+                "error": str(e),
+                "success": False,
+            }
