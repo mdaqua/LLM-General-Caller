@@ -3,7 +3,6 @@ import requests
 import logging
 from typing import Optional
 from .adapters import get_adapter
-from .case.models import CaseData
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +32,9 @@ class APIClient:
                      api_key: Optional[str] = None,
                      key_index: Optional[int] = None,
                      **kwargs):
-        if cached := self.cache.get(message):
-            return cached
+        if self.cache is not None:
+            if cached := self.cache.get(message):
+                return cached
         
         if api_key:
             provider = self._detect_provider(api_key)
@@ -81,7 +81,8 @@ class APIClient:
             }
             
             self.monitor.record_request(provider, True, time.time()-start_time)
-            self.cache.set(message, result)
+            if self.cache is not None:
+                self.cache.set(message, result)
             return result
             
         except Exception as e:

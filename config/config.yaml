@@ -9,8 +9,23 @@ api_config:
     dify:
       base_url: https://api.dify.ai/v1
       keys: [app-]
-  ttl: 300  # 5 minutes
+
+    difya:
+      base_url: https://api.dify.ai/v1
+      keys: [app-]
+    difyb:
+      base_url: https://api.dify.ai/v1
+      keys: [app-]
+    difyc:
+      base_url: https://api.dify.ai/v1
+      keys: [app-]
+    difyd:
+      base_url: https://api.dify.ai/v1
+      keys: [app-]
+      
+  ttl: 300 # seconds
   load_balancing: true
+  enable_cache: false
   max_workers: 5
   default_provider: dify
 
@@ -30,6 +45,39 @@ api_specs:
       max_tokens: 1000
       temperature: 0.7
   dify:
+    endpoint: /chat-messages
+    content_field: answer
+    required_params:
+      inputs: {}
+      response_mode: blocking
+      conversation_id: ""
+      user: "test"
+
+  difya:
+    endpoint: /chat-messages
+    content_field: answer
+    required_params:
+      inputs: {}
+      response_mode: blocking
+      conversation_id: ""
+      user: "test"
+  difyb:
+    endpoint: /chat-messages
+    content_field: answer
+    required_params:
+      inputs: {}
+      response_mode: blocking
+      conversation_id: ""
+      user: "test"
+  difyc:
+    endpoint: /chat-messages
+    content_field: answer
+    required_params:
+      inputs: {}
+      response_mode: blocking
+      conversation_id: ""
+      user: "test"
+  difyd:
     endpoint: /chat-messages
     content_field: answer
     required_params:

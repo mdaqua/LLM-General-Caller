@@ -7,7 +7,11 @@ class Config:
     def __init__(self):
         config_path = Path(__file__).parent.parent / 'config' / 'config.yaml'
         with open(config_path, 'r') as file:
-            self.config = yaml.safe_load(file)
+            self.config = yaml.load(file, Loader=yaml.SafeLoader)
+
+    def validate(self):
+        if not isinstance(self.enable_cache, bool):
+            raise ValueError("enable_cache must be a boolean")
     
     @classmethod
     def get_instance(cls):
@@ -26,3 +30,7 @@ class Config:
     @property
     def api_specs(self):
         return self.config.get('api_specs', {})
+    
+    @property
+    def enable_cache(self):
+        return self.config.get('enable_cache', True)

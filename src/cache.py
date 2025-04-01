@@ -1,6 +1,13 @@
 import time
 from collections import OrderedDict
 
+class NullCache:
+    def get(self, message):
+        return None
+    
+    def set(self, message, response):
+        pass
+
 class MessageCache:
     def __init__(self, ttl=300, max_size=1000):
         self.ttl = ttl
