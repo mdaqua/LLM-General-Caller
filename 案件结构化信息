@@ -1,0 +1,108 @@
+```json
+{
+    "case": {
+        "id": "案件标识",
+        "title": "不超过25字的案件性质概括",
+        "keywords": ["案件关键词"],
+        "time": {
+            "occur_time": "案发时间(YYYY-MM-DD HH:MM)",
+            "processing_time": "立案时间(YYYY-MM-DD HH:MM)",
+            "completion_time": "结案时间(YYYY-MM-DD HH:MM)"
+        },
+        "location": {
+            "province": "省级行政区",
+            "city": "地级市",
+            "district": "区县",
+            "street": "街道",
+            "detail": "详细地址"
+        },
+        "details": {
+            "subject": [
+                {
+                    "name": "案件行为发起者1",
+                    "sexuality": "性别",
+                    "phone": "电话号码",
+                    "id_card": "身份证号码"                
+                }
+            ],
+            "object": [
+                {
+                    "name": "案件行为对用对象1",
+                    "sexuality": "性别",
+                    "phone": "电话号码",
+                    "id_card": "身份证号码"                
+                }
+            ],
+            "actions": "案件具体行为"
+        },
+        "jurisdiction": {
+            "authority": "机关全称（带行政区划）",
+            "lead_officer": ["姓名1", "姓名2"],
+            "assistants": ["姓名1", "姓名2"]
+        },
+        "individual": {
+            "subject": {
+                "name": "案件主体人的姓名",
+                "sexuality": "性别",
+                "phone": "电话号码",
+                "id_card": "身份证号码"
+            },
+                "participants": [{
+                "name": "参与人1的姓名",
+                "sexuality": "性别",
+                "phone": "电话号码",
+                "id_card": "身份证号码",
+                "relationship": "与主体人的关系"
+            }]
+        },
+        "resolution": "具体解决方案",
+        "elements": {
+            "financial": {
+                "amount": "数值型（单位：元）",
+                "currency": "货币类型"
+            },
+            "person": {
+                "total": "整数",
+                "injured": "轻伤/重伤计数",
+                "fatalities": "死亡人数"
+            },
+            "addresses": [
+                {
+                  "type": "案发地/户籍地/公司注册地",
+                  "full_address": "完整地址文本"
+                }
+            ],
+            "organizations": ["机构全称列表"],
+            "special_flags": {
+                "police_involvement": "是否涉及警察(布尔值)",
+                "physical_conflict": "是否涉及肢体冲突(布尔值)",
+                "group_event": "是否群聚(布尔值)",
+                "religious_factor": "是否涉及宗教因素(布尔值)",
+            }
+        },
+        "law": {
+            "type": "案件的法律层类型",
+            "criteria": "判断案件法律层类型的标准",
+            "is_major": "是否为重大案件(布尔值)",
+            "is_sensitive": "是否为敏感案件(布尔值)"
+        },
+        "relationships": {
+            "person_multiEvent": {
+                "case_id": "与当前案件能判定为`一人多事`关系的案件的id",
+                "reason": "判定原因"
+            },
+            "person_multiOccur": {
+                "case_id": "与当前案件能判定为`一人多次`关系的案件的id",
+                "reason": "判定原因"
+            },
+            "location_multiEvent": {
+                "case_id": "与当前案件能判定为`一址多事`关系的案件的id",
+                "reason": "判定原因"
+            },
+            "location_multiOccur": {
+                "case_id": "与当前案件能判定为`一址多次`关系的案件的id",
+                "reason": "判定原因"
+            }
+        }
+    }
+}

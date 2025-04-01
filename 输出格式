@@ -1,0 +1,41 @@
+## 法律层要素
+```json
+{
+  "case": {
+    "id": "案件标识(如档案编号等)",
+    "law": {
+      "type": "案件的法律层类型",
+      "criteria": "判断案件法律层类型的标准",
+      "is_major": "是否为重大案件(布尔值)",
+      "is_sensitive": "是否为敏感案件(布尔值)"
+    }
+  }
+}
+```
+
+## 案件关系
+```json
+{
+  "case": {
+    "id": "target案件标识(如档案编号等)",
+    "relationships": {
+      "person_multiEvent": {
+        "case_id": "与target案件能判定为`一人多事`关系的base案件的id",
+        "reason": "判定原因"
+      },
+      "person_multiOccur": {
+        "case_id": "与target案件能判定为`一人多次`关系的base案件的id",
+        "reason": "判定原因"
+      },
+      "location_multiEvent": {
+        "case_id": "与target案件能判定为`一址多事`关系的base案件的id",
+        "reason": "判定原因"
+      },
+      "location_multiOccur": {
+        "case_id": "与target案件能判定为`一址多次`关系的base案件的id",
+        "reason": "判定原因"
+      }
+    }
+  }
+}
+```
