@@ -117,11 +117,10 @@ def result_handler(case_infos, law_infos, relationship_infos):
         cases.append(json.loads(case["content"].replace("```json\n", "").replace("\n```", "")))
     # 解析案件法律层要素
     for law_info in law_infos:
-        tmp_law_info = json.loads(law_info["content"].replace("```json\n", "").replace("\n```", ""))
-        print(tmp_law_info)
+        law_info = json.loads(law_info["content"].replace("```json\n", "").replace("\n```", ""))
         for case in cases:
-            if case["case"]["id"] == tmp_law_info["case"]["id"]:
-                case["case"]["law"] = tmp_law_info["case"]["law"]
+            if case["case"]["id"] == law_info["case"]["id"]:
+                case["case"]["law"] = law_info["case"]["law"]
     # 解析案件关系
     for relationship_info in relationship_infos:
         relationship_info = json.loads(relationship_info["content"].replace("```json\n", "").replace("\n```", ""))
