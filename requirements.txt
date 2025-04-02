@@ -5,3 +5,4 @@ pydantic
 jsonpath_rw
 pandas
 openpyxl
+neo4j

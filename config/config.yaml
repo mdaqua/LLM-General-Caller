@@ -13,21 +13,27 @@ api_config:
     difya:
       base_url: https://api.dify.ai/v1
       keys: [app-]
+      rpm: 30
     difyb:
       base_url: https://api.dify.ai/v1
       keys: [app-]
+      rpm: 30
     difyc:
       base_url: https://api.dify.ai/v1
       keys: [app-]
+      rpm: 30
     difyd:
       base_url: https://api.dify.ai/v1
       keys: [app-]
-      
+      rpm: 30
+
+  max_retries: 3
+  retry_delay: 2 # seconds
+  timeout: 30 # seconds
   ttl: 300 # seconds
   load_balancing: true
   enable_cache: false
   max_workers: 5
-  default_provider: dify
 
 api_specs:
   openai:
@@ -92,6 +98,13 @@ logging:
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 case:
-  storage_path: ./cases
+  storage_path: ./case_data
   validation_strict: true
   max_retries: 3
+
+neo4j:
+  uri: "bolt://localhost:7687"
+  username: "neo4j"
+  password: "archive-garbo-laura-model-navy-5032"
+  encrypted: false
+  max_connection_pool_size: 50

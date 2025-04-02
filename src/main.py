@@ -1,5 +1,6 @@
+import os
 import json
-import logging
+import logging.config
 import pandas as pd
 from .config import Config
 from .cache import MessageCache, NullCache
@@ -7,10 +8,133 @@ from .monitor import PerformanceMonitor
 from .balancer import LoadBalancer
 from .client import APIClient
 from .requestor import RequestCoordinator
+from .case.storage import CaseStorage
 
 def setup_logging():
     config = Config.get_instance()
     logging.config.dictConfig(config.logging_config)
+
+def request_callback(result):
+    """
+    回调函数，用于处理请求结果
+    """
+    if result["success"]:
+        print(f"{result['content']}\n")
+    else:
+        print(f"Request failed: {result['error']}")
+        print(f"============ RAW DATA ============\n{result}\n==================================\n")
+
+def get_dir_files(dir_path):
+    """
+    获取指定目录下的所有文件
+    """
+    try:
+        # 获取所有文件和目录
+        items = os.listdir(dir_path)
+
+        # 过滤出文件
+        files = [item for item in items if os.path.isfile(os.path.join(dir_path, item))]
+
+        return files
+    except Exception as e:
+        print(f"获取目录失败: {str(e)}")
+        return []
+    
+def read_excel_random(file_path, has_header=False, num=1):
+    """
+    从`Excel表格`中随机选择`n`行，构建`获取案件描述`的请求消息
+    """
+    try:
+        # 读取整个表格
+        header = 0 if has_header else None
+        df = pd.read_excel(file_path, header=header, engine='openpyxl')
+
+        # 没有表头则自动生成列名
+        if not has_header:
+            df.columns = [f"Column_{i+1}" for i in range(len(df.columns))]
+
+        # 将空值替换为 None
+        df = df.fillna(value="None")
+        
+        # 检查是否有足够的行
+        if num > len(df):
+            raise ValueError(f"表格中只有 {len(df)} 行，无法随机选择 {num} 行")
+        
+        # 随机选择 num 行, random_state 为随机数种子
+        selected = df.sample(n=num, random_state=42)
+        
+        # 转换为消息格式
+        messages = []
+        for _, row in selected.iterrows():
+            # 生成结构化内容
+            content = "\n".join([f"{col}: {row[col]}" for col in df.columns])
+            messages.append(content)
+            
+        return messages
+
+    except Exception as e:
+        print(f"读取失败: {str(e)}")
+        return []
+    
+def main_case_description_extractor():
+    # 初始化配置
+    setup_logging()
+    config = Config.get_instance()
+    config.validate()
+    
+    # 初始化组件
+    if config.api_config["enable_cache"]:
+        cache = MessageCache(ttl=config.api_config['ttl'])
+    else:
+        cache = NullCache()
+    monitor = PerformanceMonitor()
+    balancer = LoadBalancer(config.api_config['providers'])
+    client = APIClient(cache, monitor, balancer, config)
+    requestor = RequestCoordinator(client, config.api_config['max_workers'])
+
+    # 工作流
+    # 预设参数
+    total_num = 1000  # 总描述数
+    excel_paths = {
+        "大联动": 0.2,
+        "电话工单": 0.05,
+        "法院": 0.05,
+        "区长信箱": 0.1,
+        "省矛调": 0.2,
+        "司法局": 0.2,
+        "信访数据": 0.1,
+        "政务热线": 0.1
+    }
+    output_path_base = "C:\\Users\\mdaqua\\Desktop\\Workbench\\Dazhou\\LLM-General-Caller\\test\\测试数据集\\案件结构化"
+
+    for key, value in excel_paths.items():
+        results = []
+        excel_path = f"C:\\Users\\mdaqua\\Desktop\\Workbench\\Dazhou\\矛调平台往日数据\\{key}"
+        files = get_dir_files(excel_path)
+        if len(files) == 0:
+            print(f"目录 {excel_path} 下没有文件")
+            continue
+        n = int(int(value * total_num) / len(files)) + 1  # 每个文件读取的行数
+        for file in files:
+            file_path = os.path.join(excel_path, file)
+            if not os.path.isfile(file_path):
+                print(f"{file_path} 不是一个有效的文件")
+                continue
+            # 读取Excel表格，构建案件描述信息
+            messages = read_excel_random(file_path, num=n)
+            results += requestor.batch_request(messages, provider="difya", callback=request_callback)
+
+            # 进度监控
+            print("Final Progress:", requestor.get_progress())
+            print("Errors:", requestor.get_errors())
+        for result in results:
+            if not result["success"]:
+                continue
+            with open(os.path.join(output_path_base, f"{key}.txt"), 'a', encoding='utf-8') as file:
+                file.write(result["content"] + "\n")
+    
+if __name__ == "__main__":
+    main_case_description_extractor()
 
 def multiple_json_parse(s):
     decoder = json.JSONDecoder()
@@ -32,9 +156,9 @@ def multiple_json_parse(s):
         }
         yield result
 
-def construct_msg_description(file_path, start_row=2, end_row=None):
+def read_excel_order(file_path, start_row=2, end_row=None):
     """
-    基于`Excel表格`构建`获取案件描述`的请求消息
+    从`Excel表格`中顺序选取数行，构建`获取案件描述`的请求消息
     """
     try:
         # 读取整个表格
@@ -67,7 +191,7 @@ def construct_msg_description(file_path, start_row=2, end_row=None):
         print(f"读取失败: {str(e)}")
         return []
 
-def construct_msg_case_info(results):
+def msg_case_info(results):
     """
     基于`案件描述`构建`获取案件基础信息`的请求消息
     """
@@ -76,7 +200,7 @@ def construct_msg_case_info(results):
         msg.append(res["content"])
     return msg
 
-def construct_msg_law(results):
+def msg_law(results):
     """
     基于`案件描述`构建`获取案件法律层要素`的请求消息
     """
@@ -85,7 +209,7 @@ def construct_msg_law(results):
         msg.append(res["content"])
     return msg
 
-def construct_msg_relationship(results, file_path):
+def msg_relationship(results, file_path):
     """
     基于`现有案件`和`新增案件描述`构建`获取案件关系`的请求消息
     """
@@ -130,11 +254,12 @@ def result_handler(case_infos, law_infos, relationship_infos):
 
     return cases
 
-def main():
+def main_workflow_example():
     # 初始化配置
     setup_logging()
     config = Config.get_instance()
     config.validate()
+    neo4j_config = config.neo4j_config if hasattr(config, 'neo4j') else None
     
     # 初始化组件
     if config.api_config["enable_cache"]:
@@ -145,23 +270,28 @@ def main():
     balancer = LoadBalancer(config.api_config['providers'])
     client = APIClient(cache, monitor, balancer, config)
     requestor = RequestCoordinator(client, config.api_config['max_workers'])
+    storage = CaseStorage(
+        storage_path=config.case.get('storage_path', './case_data'),
+        neo4j_config=neo4j_config
+    )
 
+    # 预设参数
     excel_path = "C:\\Users\\mdaqua\\Desktop\\Workbench\\Dazhou\\LLM-General-Caller\\test\\base.xlsx"
     start_row = 801  # 开始读取行号
     end_row = 801  # 结束读取行号，None表示读取到文件末尾
 
     # 读取Excel表格，构建案件描述信息
-    messages_description = construct_msg_description(excel_path, start_row, end_row)
+    messages_description = read_excel_order(excel_path, start_row, end_row)
     results_description = requestor.batch_request(messages_description, provider="difya")
     # 获取案件结构化信息
-    messages_case_info = construct_msg_case_info(results_description)
+    messages_case_info = msg_case_info(results_description)
     results_case_info = requestor.batch_request(messages_case_info, provider="difyb")
     # 获取案件法律层信息
-    messages_law = construct_msg_law(results_description)
+    messages_law = msg_law(results_description)
     results_law = requestor.batch_request(messages_law, provider="difyc")
     # 获取案件关系信息
     base_file_path = "C:\\Users\\mdaqua\\Desktop\\Workbench\\Dazhou\\LLM-General-Caller\\test\\fake_database.txt"
-    messages_relationship = construct_msg_relationship(results_description, base_file_path)
+    messages_relationship = msg_relationship(results_description, base_file_path)
     results_relationship = requestor.batch_request(messages_relationship, provider="difyd")
     
     # 输出结果
@@ -174,6 +304,3 @@ def main():
     )
     for case in cases:
         print(json.dumps(case, ensure_ascii=False, indent=4))
-
-if __name__ == "__main__":
-    main()
